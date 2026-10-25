@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>مواعيدي</title>
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#eef2f1;--card:#ffffff;--ink:#14302e;--mute:#5d7471;--line:#d3dedc;--acc:#0f766e;--gold:#e3b04b;--on:#14302e;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0e1a19;--card:#162726;--ink:#e6f0ee;--mute:#93aca8;--line:#26403d;--acc:#4fd1c5;--gold:#e3b04b;--on:#14302e}}
+:root[data-theme="dark"]{--bg:#0e1a19;--card:#162726;--ink:#e6f0ee;--mute:#93aca8;--line:#26403d;--acc:#4fd1c5;--gold:#e3b04b;--on:#14302e}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*,*::before,*::after{box-sizing:inherit}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:Cairo,Tahoma,"Segoe UI",sans-serif;line-height:1.7}
+#app{max-width:640px;margin:0 auto;padding:16px 14px 40px}
+header{padding:8px 4px 4px}
+h1{margin:0;font-size:2rem;font-weight:800}
+h2{margin:0 0 8px;font-size:1.15rem;font-weight:800}
+p{margin:4px 0}
+.mute{color:var(--mute);font-size:.9rem}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;margin-top:14px}
+.row{display:flex;align-items:center;justify-content:space-between;gap:10px;width:100%;padding:10px 2px;border:0;border-bottom:1px solid var(--line);background:none;color:inherit;font:inherit;text-align:start;cursor:pointer}
+.row:last-child{border-bottom:0}
+div.row,label.row{cursor:default}
+label.row{cursor:pointer}
+.row b{font-weight:600;color:var(--acc);white-space:nowrap}
+input[type=time],input[type=datetime-local]{font:inherit;color:inherit;background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:4px 8px}
+input[type=checkbox]{width:22px;height:22px;accent-color:var(--acc)}
+.big{width:100%;padding:14px;border:0;border-radius:12px;background:var(--acc);color:var(--on);font:inherit;font-weight:800;font-size:1.1rem;cursor:pointer}
+.add{display:flex;gap:8px;margin-top:10px}
+.add button,.x{font:inherit;border:1px solid var(--line);background:var(--bg);color:inherit;border-radius:8px;padding:4px 14px;cursor:pointer}
+.ev{display:flex;gap:12px;align-items:baseline;padding:8px 2px;border-bottom:1px solid var(--line)}
+.ev:last-child{border-bottom:0}
+.ev time{font-variant-numeric:tabular-nums;font-weight:800;min-width:3.6em}
+.ev small{display:block;color:var(--mute)}
+.ev.past{opacity:.45}
+.ev.next{background:var(--acc);color:var(--on);border-radius:10px;padding:12px;border:0;margin:6px 0}
+.ev.next time{font-size:1.6rem}
+.ev.next small{color:inherit;opacity:.85}
+#toasts{position:fixed;top:calc(env(safe-area-inset-top,0px) + 8px);left:8px;right:8px;z-index:10;display:grid;gap:8px}
+.toast{background:var(--gold);color:var(--on);border-radius:12px;padding:14px;font-weight:800;box-shadow:0 4px 18px rgba(0,0,0,.25);cursor:pointer}
+button:focus-visible,input:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
+</style>
+</head>
+<body>
+<div id="toasts"></div>
+<div id="app"></div>
+<script>
+const $=s=>document.querySelector(s),pad=n=>String(n).padStart(2,'0'),MIN=60000;
+const ls={get(k,d){try{const v=localStorage.getItem('mw_'+k);return v==null?d:JSON.parse(v)}catch(e){return d}},
+set(k,v){try{localStorage.setItem('mw_'+k,JSON.stringify(v))}catch(e){}}};
+const AR=['الأحد','الاثنين','الثلاثاء','الأربعاء','الخميس','الجمعة','السبت'];
+const COURSES=[['BSP 501',0,14,16,'بي إس بي خمسمائة وواحد'],['BAS 401',1,10,12,'بي إي إس أربعمائة وواحد'],
+['BEC 401',1,18,20,'بي إي سي أربعمائة وواحد'],['BPG 401',2,10,12,'بي بي جي أربعمائة وواحد'],
+['BPH 401',3,10,12,'بي بي إتش أربعمائة وواحد'],['BNA 401',4,14,16,'بي إن إي أربعمائة وواحد'],
+['BPG 402',6,14,16,'بي بي جي أربعمائة واثنان']];
+const CATS=[['LECTURE','المحاضرات'],['STUDY','تذكير الدراسة (5 و7)'],['TYPING','تعلم الكتابة'],['QURAN','ورد القرآن'],
+['MORNING','أذكار الصباح'],['EVENING','أذكار المساء'],['DHIKR','اذكر الله كل ساعة']];
+const MODES=['🔔 منبه ناطق','📩 إشعار فقط','⛔ متوقف'];
+const SEED=['2026-10-25T20:00Z','2026-11-01T15:15Z','2026-11-04T17:45Z','2026-11-07T20:00Z','2026-11-21T20:00Z',
+'2026-11-24T20:00Z','2026-11-29T19:00Z','2026-12-06T19:00Z','2026-12-09T20:00Z','2026-12-13T19:00Z',
+'2026-12-20T19:00Z','2027-01-03T19:00Z','2027-01-10T19:00Z','2027-01-19T20:00Z','2027-01-27T20:00Z'].map(x=>Date.parse(x));
+
+let cfg=Object.assign({modes:{},morning:'06:30',evening:'17:30',sleepS:'00:00',sleepE:'06:00'},ls.get('cfg',{}));
+let matches=ls.get('matches',SEED),done=ls.get('done',{}),active=false,actx=null,wl=null;
+const save=()=>{ls.set('cfg',cfg);ls.set('matches',matches);ls.set('done',done)};
+const dstr=d=>d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate();
+const mode=k=>cfg.modes[k]??(['MORNING','EVENING','DHIKR'].includes(k)?1:0);
+const mins=t=>{const [h,m]=t.split(':').map(Number);return h*60+m};
+const sleeping=h=>{const s=mins(cfg.sleepS),e=mins(cfg.sleepE),m=h*60;return s===e?false:s<e?(m>=s&&m<e):(m>=s||m<e)};
+const at=(d,m)=>new Date(d.getFullYear(),d.getMonth(),d.getDate(),0,m);
+const hm=d=>pad(d.getHours())+':'+pad(d.getMinutes());
+const fmt=d=>AR[d.getDay()]+' '+d.getDate()+'/'+(d.getMonth()+1)+'  '+hm(d);
+
+// الكتابة (20 د) ثم الورد (15 د): الافتراضي 22:50، وحول مباراة ريال مدريد بدون تجاوز منتصف الليل
+const clash=(s,k)=>+s<k+140*MIN&&+s+35*MIN>k-10*MIN;
+function blockStart(d){
+  const def=at(d,22*60+50),ms=[...matches].sort((a,b)=>a-b),hit=ms.find(k=>clash(def,k));
+  if(hit==null)return def;
+  const after=new Date(hit+140*MIN);
+  if(+after+35*MIN<=+at(d,1440)&&!ms.some(k=>k!==hit&&clash(after,k)))return after;
+  return new Date(hit-45*MIN);
+}
+function events(d){
+  const ev=[],day=d.getDay();
+  for(const [code,wd,s,e,sp] of COURSES)if(wd===day){
+    ev.push({k:'LECTURE',key:'L'+code,t:at(d,s*60-30),text:'لديك محاضرة '+code+' بعد نصف ساعة',say:'لديك محاضرة '+sp+' بعد نصف ساعة'});
+    if(s<17)for(const h of [17,19])ev.push({k:'STUDY',key:'S'+code+h,t:at(d,h*60),code,text:'لم تدرس '+code+' بعد. ادرسها ثم ضع ✓',say:'لم تدرس '+sp+' بعد'});
+  }
+  const b=blockStart(d),moved=+b!==+at(d,22*60+50),note=moved?'⚽ رُتّب حول مباراة ريال مدريد':'';
+  ev.push({k:'TYPING',key:'T',t:b,note,text:'حان وقت تعلم الكتابة على لوحة المفاتيح ⌨️',say:'حان وقت تعلم الكتابة على لوحة المفاتيح'});
+  ev.push({k:'QURAN',key:'Q',t:new Date(+b+20*MIN),note,text:'حان وقت وردك من القرآن 📖',say:'حان وقت وردك من القرآن'});
+  ev.push({k:'MORNING',key:'M',t:at(d,mins(cfg.morning)),text:'أذكار الصباح 🌅 حان وقتها',say:'حان وقت أذكار الصباح'});
+  ev.push({k:'EVENING',key:'E',t:at(d,mins(cfg.evening)),text:'أذكار المساء 🌇 حان وقتها',say:'حان وقت أذكار المساء'});
+  for(let h=0;h<24;h++)if(!sleeping(h))ev.push({k:'DHIKR',key:'D'+h,t:at(d,h*60),text:'اذكر الله 🤍 سبحان الله وبحمده',say:'اذكر الله'});
+  return ev.sort((a,b)=>a.t-b.t);
+}
+
+function speak(t){
+  if(!('speechSynthesis' in window))return;
+  const mk=()=>{const u=new SpeechSynthesisUtterance(t);u.lang='ar-SA';u.rate=.95;
+    const v=speechSynthesis.getVoices().find(v=>v.lang&&v.lang.startsWith('ar'));if(v)u.voice=v;return u};
+  speechSynthesis.cancel();speechSynthesis.speak(mk());speechSynthesis.speak(mk());
+}
+function beep(){
+  if(!actx)return;
+  [0,.35,.7].forEach(t=>{const o=actx.createOscillator(),g=actx.createGain();o.frequency.value=880;g.gain.value=.25;
+    o.connect(g);g.connect(actx.destination);o.start(actx.currentTime+t);o.stop(actx.currentTime+t+.2)});
+}
+function toast(t){
+  const d=document.createElement('div');d.className='toast';d.textContent=t;$('#toasts').appendChild(d);
+}
+function fire(e){
+  const m=mode(e.k);if(m===2)return;
+  if(e.k==='STUDY'&&done[e.code]===dstr(new Date()))return;
+  toast(e.text);
+  try{if(Notification.permission==='granted')new Notification('مواعيدي',{body:e.text})}catch(x){}
+  if(m===0){beep();speak(e.say)}
+}
+function tick(){
+  const now=new Date(),ds=dstr(now);let f=ls.get('fired',{}),ch=false;
+  if(f.d!==ds)f={d:ds,k:{}};
+  for(const e of events(now))if(e.t<=now&&now-e.t<120000&&!f.k[e.key]){f.k[e.key]=1;ch=true;fire(e)}
+  if(ch)ls.set('fired',f);
+}
+async function enable(){
+  try{actx=new (window.AudioContext||window.webkitAudioContext)();await actx.resume()}catch(e){}
+  try{await Notification.requestPermission()}catch(e){}
+  try{wl=await navigator.wakeLock.request('screen')}catch(e){}
+  active=true;speak('تم تفعيل المنبهات');render();
+}
+document.addEventListener('visibilitychange',async()=>{
+  if(active&&document.visibilityState==='visible'){try{wl=await navigator.wakeLock.request('screen')}catch(e){}}
+});
+
+function renderToday(){
+  const now=new Date(),dn=dstr(now);
+  const list=events(now).filter(e=>e.k!=='DHIKR'&&!(e.k==='STUDY'&&done[e.code]===dn));
+  const nx=list.find(e=>e.t>now);
+  $('#today').innerHTML=(list.map(e=>`<div class="ev ${e===nx?'next':e.t<=now?'past':''}"><time>${hm(e.t)}</time><span>${e.text}<small>${MODES[mode(e.k)]}${e.note?' — '+e.note:''}</small></span></div>`).join('')||'<p class="mute">لا مواعيد اليوم.</p>')
+  +`<p class="mute">اذكر الله: ${MODES[mode('DHIKR')]}، كل ساعة عدا من ${cfg.sleepS} إلى ${cfg.sleepE}.</p>`;
+}
+function render(){
+  const dn=dstr(new Date()),up=[...matches].filter(k=>k>Date.now()-2*3600e3).sort((a,b)=>a-b).slice(0,8);
+  $('#app').innerHTML=`
+  <header><h1>مواعيدي</h1><p class="mute">${fmt(new Date())}</p></header>
+  <section class="card">${active
+    ?'<p><b>✅ المنبهات مفعّلة.</b></p><p class="mute">أبقِ هذه الصفحة مفتوحة والشاشة تعمل، فالمتصفح لا ينبّه وهي مغلقة.</p>'
+    :'<button class="big" data-a="enable">فعّل المنبهات</button><p class="mute">اضغط الزر في كل مرة تفتح فيها الصفحة، ليسمح المتصفح بالصوت والإشعارات.</p>'}</section>
+  <section class="card"><h2>اليوم</h2><div id="today"></div></section>
+  <section class="card"><h2>موادي</h2><p class="mute">ضع ✓ بعد أن تدرس المادة في يومها.</p>
+  ${COURSES.map(([c,wd,s,e])=>`<label class="row"><span>${c} — ${AR[wd]} ${s}–${e}</span><input type="checkbox" data-a="done" data-c="${c}" ${done[c]===dn?'checked':''}></label>`).join('')}</section>
+  <section class="card"><h2>التحكم</h2><p class="mute">اضغط على أي بند لتغيير نوعه: منبه ناطق، ثم إشعار فقط، ثم متوقف.</p>
+  ${CATS.map(([k,l])=>`<button class="row" data-a="mode" data-k="${k}"><span>${l}</span><b>${MODES[mode(k)]}</b></button>`).join('')}
+  ${[['morning','وقت أذكار الصباح'],['evening','وقت أذكار المساء'],['sleepS','بداية النوم'],['sleepE','نهاية النوم']]
+    .map(([f,l])=>`<label class="row"><span>${l}</span><input type="time" data-f="${f}" value="${cfg[f]}"></label>`).join('')}</section>
+  <section class="card"><h2>مباريات ريال مدريد</h2><p class="mute">الأوقات بتوقيت جهازك. الكتابة والورد يُرتَّبان قبل المباراة أو بعدها، قبل منتصف الليل.</p>
+  ${up.map(k=>`<div class="row"><span>⚽ ${fmt(new Date(k))}</span><button class="x" data-a="delm" data-k="${k}" aria-label="حذف المباراة">حذف</button></div>`).join('')||'<p class="mute">لا مباريات مسجلة.</p>'}
+  <div class="add"><input type="datetime-local" id="newm"><button data-a="addm">إضافة</button></div></section>`;
+  renderToday();
+}
+document.addEventListener('click',e=>{
+  const t=e.target.closest('.toast');if(t){t.remove();return}
+  const b=e.target.closest('button[data-a]');if(!b)return;
+  const a=b.dataset.a,k=b.dataset.k;
+  if(a==='enable')enable();
+  else if(a==='mode'){cfg.modes[k]=(mode(k)+1)%3;save();render()}
+  else if(a==='delm'){matches=matches.filter(x=>x!==+k);save();render()}
+  else if(a==='addm'){const v=$('#newm').value;if(!v)return;matches.push(new Date(v).getTime());save();render()}
+});
+document.addEventListener('change',e=>{
+  const t=e.target;
+  if(t.dataset.f){if(t.value){cfg[t.dataset.f]=t.value;save();renderToday()}}
+  else if(t.dataset.a==='done'){done[t.dataset.c]=t.checked?dstr(new Date()):'';save()}
+});
+render();tick();setInterval(tick,5000);setInterval(renderToday,30000);
+</script>
+</body>
+</html>
