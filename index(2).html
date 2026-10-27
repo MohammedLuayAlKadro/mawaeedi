@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#155e75">
+<meta name="description" content="مواعيدي - تنظيم المهام والمحاضرات والأذكار اليومية">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon-192.png">
+<title>مواعيدي</title>
+<style>
+:root{--bg:#f3f7fa;--card:#fff;--ink:#172b3a;--muted:#6b7d8b;--primary:#155e75;--primary2:#0e7490;--line:#dfe8ee;--ok:#16805d;--danger:#b42318}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font-family:Tahoma,Arial,sans-serif;line-height:1.6}
+header{background:linear-gradient(135deg,#164e63,#0e7490);color:white;padding:22px 16px 18px;border-radius:0 0 24px 24px;box-shadow:0 5px 18px #0e749022}
+.wrap{max-width:850px;margin:auto;padding:0 14px}header h1{margin:0;font-size:27px}header p{margin:3px 0 0;color:#d9f4fb;font-size:14px}
+.datebox{margin-top:14px;display:flex;justify-content:space-between;gap:10px;align-items:center;font-size:14px}.pill{background:#ffffff20;padding:5px 10px;border-radius:20px}
+main{padding:15px 0 95px}.tabs{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:0 0 14px}.tab{border:1px solid var(--line);border-radius:12px;background:white;padding:10px 4px;font-size:14px;color:var(--ink);cursor:pointer}.tab.active{background:var(--primary);color:#fff;border-color:var(--primary)}
+.panel{display:none}.panel.active{display:block}.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:15px;margin-bottom:12px;box-shadow:0 3px 12px #1b435509}
+h2{font-size:19px;margin:0 0 12px}h3{font-size:16px;margin:0 0 7px}.muted{color:var(--muted);font-size:13px}.row{display:flex;gap:8px;align-items:center}.between{justify-content:space-between}.grow{flex:1;min-width:0}
+button,input,select,textarea{font:inherit}button{cursor:pointer}.btn{border:0;border-radius:10px;background:var(--primary);color:white;padding:9px 13px}.btn.secondary{background:#e5f3f7;color:#155e75}.btn.danger{background:#fff0ee;color:var(--danger)}.btn.small{padding:5px 9px;font-size:13px}
+input,select,textarea{width:100%;border:1px solid #cad8e1;border-radius:10px;padding:10px;background:#fff;color:var(--ink);margin:4px 0 10px}label{font-size:13px;color:var(--muted)}.formgrid{display:grid;grid-template-columns:1fr 1fr;gap:8px}.formgrid .full{grid-column:1/-1}
+.item{display:flex;gap:10px;align-items:flex-start;padding:12px 0;border-bottom:1px solid var(--line)}.item:last-child{border-bottom:0}.item input[type=checkbox]{width:20px;height:20px;margin:4px 0 0;accent-color:var(--ok)}.item.done .itemtitle{text-decoration:line-through;color:var(--muted)}.itemtitle{font-weight:600;overflow-wrap:anywhere}.meta{font-size:12px;color:var(--muted)}.empty{text-align:center;padding:22px;color:var(--muted)}
+.adhkar{font-size:18px;line-height:2;margin:8px 0}.counter{font-size:24px;font-weight:bold;color:var(--primary)}.statgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.stat{background:#e9f6f8;border-radius:12px;padding:12px;text-align:center}.stat strong{display:block;font-size:23px;color:var(--primary)}.notice{background:#fff7df;border:1px solid #f5df9a;border-radius:12px;padding:10px;font-size:13px}
+footer{position:fixed;bottom:0;left:0;right:0;background:#ffffffed;backdrop-filter:blur(8px);border-top:1px solid var(--line);padding:10px;text-align:center;color:var(--muted);font-size:12px}
+@media(min-width:650px){.tabs{grid-template-columns:repeat(6,1fr)}}
+</style>
+</head>
+<body>
+<header><div class="wrap"><h1>مواعيدي</h1><p>رتّب يومك، تابع مهامك، ولا تنسَ أذكارك</p><div class="datebox"><span id="todayLabel"></span><span class="pill" id="progressLabel">إنجاز اليوم: 0%</span></div></div></header>
+<main class="wrap">
+<nav class="tabs" aria-label="أقسام التطبيق">
+<button class="tab active" data-tab="today">اليوم</button><button class="tab" data-tab="adhkar">الأذكار</button><button class="tab" data-tab="add">إضافة مهمة</button><button class="tab" data-tab="schedule">الجدول</button><button class="tab" data-tab="history">السجل</button><button class="tab" data-tab="settings">الإعدادات</button>
+</nav>
+<section id="today" class="panel active">
+<div class="card"><h2>ملخص اليوم</h2><div class="statgrid"><div class="stat"><strong id="totalCount">0</strong><span class="muted">كل المهام</span></div><div class="stat"><strong id="doneCount">0</strong><span class="muted">منجزة</span></div><div class="stat"><strong id="leftCount">0</strong><span class="muted">متبقية</span></div></div></div>
+<div class="card"><div class="row between"><h2>مهام اليوم</h2><button class="btn small" onclick="showTab('add')">+ مهمة</button></div><div id="todayTasks"></div></div>
+<div class="card"><h2>تذكير سريع</h2><p class="muted">يمكنك تفعيل الإشعارات أثناء استخدام التطبيق من الإعدادات. لا يضمن المتصفح تشغيل المنبه بعد إغلاق التطبيق بالكامل.</p><button class="btn secondary" onclick="requestNotifications()">تفعيل الإشعارات</button></div>
+</section>
+<section id="adhkar" class="panel">
+<div class="card"><h2>أذكار الصباح</h2><div id="morningList"></div></div>
+<div class="card"><h2>أذكار المساء</h2><div id="eveningList"></div></div>
+<div class="card"><h2>التسبيح</h2><div class="row between"><div><div class="counter" id="tasbeehCount">0</div><div class="muted">عدد التسبيحات</div></div><button class="btn" onclick="incrementTasbeeh()">سبّح</button><button class="btn secondary" onclick="resetTasbeeh()">تصفير</button></div></div>
+</section>
+<section id="add" class="panel">
+<div class="card"><h2>إضافة مهمة جديدة</h2><form id="taskForm"><div class="formgrid"><div class="full"><label for="taskTitle">عنوان المهمة</label><input id="taskTitle" required maxlength="100" placeholder="مثال: مراجعة المحاضرة"></div><div><label for="taskDate">التاريخ</label><input id="taskDate" type="date" required></div><div><label for="taskTime">الوقت (اختياري)</label><input id="taskTime" type="time"></div><div><label for="taskRepeat">التكرار</label><select id="taskRepeat"><option value="none">مرة واحدة</option><option value="daily">يوميًا</option><option value="weekly">أسبوعيًا</option></select></div><div><label for="taskCategory">التصنيف</label><select id="taskCategory"><option>دراسة</option><option>عمل</option><option>شخصي</option><option>عبادة</option><option>أخرى</option></select></div><div class="full"><label for="taskNotes">ملاحظات (اختياري)</label><textarea id="taskNotes" rows="2" maxlength="300" placeholder="تفاصيل إضافية"></textarea></div></div><button class="btn" type="submit">حفظ المهمة</button></form></div>
+</section>
+<section id="schedule" class="panel">
+<div class="card"><h2>الجدول الدراسي</h2><p class="muted">أضف محاضراتك وأوقاتك الثابتة هنا. تُحفظ البيانات على هذا الجهاز.</p><form id="courseForm"><div class="formgrid"><div class="full"><label for="courseName">اسم المادة أو النشاط</label><input id="courseName" required maxlength="80" placeholder="مثال: برمجة 1"></div><div><label for="courseDay">اليوم</label><select id="courseDay"><option>الأحد</option><option>الإثنين</option><option>الثلاثاء</option><option>الأربعاء</option><option>الخميس</option><option>الجمعة</option><option>السبت</option></select></div><div><label for="courseTime">الوقت</label><input id="courseTime" type="time" required></div><div class="full"><label for="coursePlace">المكان أو ملاحظة</label><input id="coursePlace" maxlength="100"></div></div><button class="btn">إضافة إلى الجدول</button></form></div><div class="card"><h2>المواعيد المسجلة</h2><div id="courseList"></div></div>
+</section>
+<section id="history" class="panel"><div class="card"><h2>سجل الإنجاز</h2><div id="historyList"></div><button class="btn danger small" onclick="clearHistory()">مسح سجل الإنجاز</button></div></section>
+<section id="settings" class="panel">
+<div class="card"><h2>الإعدادات</h2><label><input id="voiceToggle" type="checkbox" style="width:auto;margin-left:7px"> قراءة التنبيهات صوتيًا عند تشغيلها</label><br><label><input id="notifyToggle" type="checkbox" style="width:auto;margin-left:7px"> تذكير داخل التطبيق عند حلول وقت المهمة</label><p class="muted">تعمل التذكيرات داخل الصفحة المفتوحة. الإشعارات في الخلفية بعد إغلاق الصفحة تحتاج إلى خدمة Push وخادم إشعارات؛ ملف GitHub Pages وحده لا يضمن ذلك.</p><button class="btn" onclick="saveSettings()">حفظ الإعدادات</button> <button class="btn secondary" onclick="exportData()">تصدير نسخة احتياطية</button><label class="btn secondary" style="display:inline-block">استيراد نسخة<input type="file" accept="application/json" hidden onchange="importData(event)"></label><p id="settingsMessage" class="muted"></p></div>
+<div class="card"><h2>معلومات التطبيق</h2><p class="muted">الإصدار 1.0 — يعمل كتطبيق ويب تقدمي (PWA) عند استضافته عبر HTTPS.</p><button class="btn danger small" onclick="if(confirm('هل تريد حذف جميع بيانات التطبيق من هذا الجهاز؟')){localStorage.clear();location.reload()}">حذف كل البيانات</button></div>
+</section>
+</main><footer>مواعيدي • بياناتك محفوظة محليًا على جهازك</footer>
+<script>
+const $=id=>document.getElementById(id);
+const key='mawaeedi_data_v1';
+const defaults={tasks:[],courses:[],history:[],tasbeeh:0,settings:{voice:false,notify:false},adhkarDone:[]};
+let data;try{data={...defaults,...JSON.parse(localStorage.getItem(key)||'{}')};data.settings={...defaults.settings,...(data.settings||{})}}catch(e){data=structuredClone(defaults)}
+function save(){localStorage.setItem(key,JSON.stringify(data));render()}
+function today(){return new Date().toISOString().slice(0,10)}
+$('taskDate').value=today();
+$('todayLabel').textContent=new Date().toLocaleDateString('ar-SY',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
+function showTab(id){document.querySelectorAll('.panel').forEach(x=>x.classList.toggle('active',x.id===id));document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('active',x.dataset.tab===id));if(id==='add')$('taskDate').value=today()}
+document.querySelectorAll('.tab').forEach(b=>b.addEventListener('click',()=>showTab(b.dataset.tab)));
+function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+function taskForToday(t){return t.date===today()||t.repeat==='daily'||(t.repeat==='weekly'&&new Date(t.date+'T12:00:00').getDay()===new Date().getDay())}
+function renderTasks(){let list=data.tasks.filter(taskForToday);$('totalCount').textContent=list.length;$('doneCount').textContent=list.filter(t=>t.done).length;$('leftCount').textContent=list.filter(t=>!t.done).length;$('progressLabel').textContent='إنجاز اليوم: '+(list.length?Math.round(list.filter(t=>t.done).length/list.length*100):0)+'%';
+$('todayTasks').innerHTML=list.length?list.sort((a,b)=>(a.time||'').localeCompare(b.time||'')).map(t=>`<div class="item ${t.done?'done':''}"><input type="checkbox" ${t.done?'checked':''} onchange="toggleTask('${t.id}')"><div class="grow"><div class="itemtitle">${esc(t.title)}</div><div class="meta">${esc(t.time||'دون وقت')} • ${esc(t.category)} • ${t.repeat==='daily'?'يومي':t.repeat==='weekly'?'أسبوعي':'مرة واحدة'}</div>${t.notes?`<div class="muted">${esc(t.notes)}</div>`:''}</div><button class="btn danger small" onclick="deleteTask('${t.id}')">حذف</button></div>`).join(''):'<div class="empty">لا توجد مهام لهذا اليوم. أضف أول مهمة من زر «مهمة».</div>'}
+function toggleTask(id){let t=data.tasks.find(t=>t.id===id);if(!t)return;t.done=!t.done;if(t.done)data.history.unshift({title:t.title,date:today(),time:new Date().toLocaleTimeString('ar',{hour:'2-digit',minute:'2-digit'})});save()}
+function deleteTask(id){data.tasks=data.tasks.filter(t=>t.id!==id);save()}
+$('taskForm').addEventListener('submit',e=>{e.preventDefault();data.tasks.push({id:crypto.randomUUID?crypto.randomUUID():String(Date.now()),title:$('taskTitle').value.trim(),date:$('taskDate').value,time:$('taskTime').value,repeat:$('taskRepeat').value,category:$('taskCategory').value,notes:$('taskNotes').value.trim(),done:false,notified:false});e.target.reset();$('taskDate').value=today();save();showTab('today')});
+$('courseForm').addEventListener('submit',e=>{e.preventDefault();data.courses.push({id:String(Date.now()),name:$('courseName').value.trim(),day:$('courseDay').value,time:$('courseTime').value,place:$('coursePlace').value.trim()});e.target.reset();save()});
+function renderCourses(){$('courseList').innerHTML=data.courses.length?data.courses.slice().sort((a,b)=>a.day.localeCompare(b.day)||a.time.localeCompare(b.time)).map(c=>`<div class="item"><div class="grow"><div class="itemtitle">${esc(c.name)}</div><div class="meta">${esc(c.day)} • ${esc(c.time)} ${c.place?'• '+esc(c.place):''}</div></div><button class="btn danger small" onclick="deleteCourse('${c.id}')">حذف</button></div>`).join(''):'<div class="empty">لم تضف مواعيد بعد.</div>'}
+function deleteCourse(id){data.courses=data.courses.filter(c=>c.id!==id);save()}
+function renderHistory(){$('historyList').innerHTML=data.history.length?data.history.slice(0,100).map(h=>`<div class="item"><div class="grow"><div class="itemtitle">${esc(h.title)}</div><div class="meta">${esc(h.date)} • ${esc(h.time||'')}</div></div></div>`).join(''):'<div class="empty">لا يوجد إنجاز مسجل حتى الآن.</div>'}
+function clearHistory(){if(confirm('مسح سجل الإنجاز؟')){data.history=[];save()}}
+const morning=['أَعُوذُ بِاللَّهِ مِنَ الشَّيْطَانِ الرَّجِيمِ','اللَّهُ لَا إِلَٰهَ إِلَّا هُوَ الْحَيُّ الْقَيُّومُ، لَا تَأْخُذُهُ سِنَةٌ وَلَا نَوْمٌ، لَهُ مَا فِي السَّمَاوَاتِ وَمَا فِي الْأَرْضِ...','بِسْمِ اللَّهِ الَّذِي لَا يَضُرُّ مَعَ اسْمِهِ شَيْءٌ فِي الْأَرْضِ وَلَا فِي السَّمَاءِ وَهُوَ السَّمِيعُ الْعَلِيمُ.','رَضِيتُ بِاللَّهِ رَبًّا، وَبِالْإِسْلَامِ دِينًا، وَبِمُحَمَّدٍ ﷺ نَبِيًّا.'];
+const evening=['أَعُوذُ بِاللَّهِ مِنَ الشَّيْطَانِ الرَّجِيمِ','أَمْسَيْنَا وَأَمْسَى الْمُلْكُ لِلَّهِ، وَالْحَمْدُ لِلَّهِ، لَا إِلَٰهَ إِلَّا اللَّهُ وَحْدَهُ لَا شَرِيكَ لَهُ...','بِسْمِ اللَّهِ الَّذِي لَا يَضُرُّ مَعَ اسْمِهِ شَيْءٌ فِي الْأَرْضِ وَلَا فِي السَّمَاءِ وَهُوَ السَّمِيعُ الْعَلِيمُ.','رَضِيتُ بِاللَّهِ رَبًّا، وَبِالْإِسْلَامِ دِينًا، وَبِمُحَمَّدٍ ﷺ نَبِيًّا.'];
+function renderAdhkar(){[['morningList',morning,'صباح'],['eveningList',evening,'مساء']].forEach(([id,arr,type])=>{$(id).innerHTML=arr.map((s,i)=>`<div class="item"><div class="grow"><div class="adhkar">${esc(s)}</div><div class="meta">ذكر ${i+1}</div></div><button class="btn secondary small" onclick="speak('${encodeURIComponent(s)}')">استماع</button></div>`).join('')})}
+function speak(encoded){if(!('speechSynthesis'in window)){alert('ميزة القراءة الصوتية غير مدعومة في هذا المتصفح.');return}let u=new SpeechSynthesisUtterance(decodeURIComponent(encoded));u.lang='ar-SA';speechSynthesis.speak(u)}
+function incrementTasbeeh(){data.tasbeeh=(data.tasbeeh||0)+1;save()}function resetTasbeeh(){data.tasbeeh=0;save()}
+function renderSettings(){$('voiceToggle').checked=!!data.settings.voice;$('notifyToggle').checked=!!data.settings.notify}
+function saveSettings(){data.settings.voice=$('voiceToggle').checked;data.settings.notify=$('notifyToggle').checked;save();$('settingsMessage').textContent='تم حفظ الإعدادات.'}
+async function requestNotifications(){if(!('Notification'in window)){alert('هذا المتصفح لا يدعم إشعارات الويب.');return}try{let p=await Notification.requestPermission();alert(p==='granted'?'تم السماح بالإشعارات.':'لم يتم السماح بالإشعارات.')}catch(e){alert('تعذر طلب الإذن.')}}
+function checkReminders(){if(!data.settings.notify)return;let now=new Date(),d=today(),hm=now.toTimeString().slice(0,5);for(let t of data.tasks){if(!t.done&&t.date===d&&t.time===hm&&!t.notified){t.notified=true;if('Notification'in window&&Notification.permission==='granted')new Notification('موعدك: '+t.title,{body:'حان وقت المهمة الآن.'});if(data.settings.voice&&'speechSynthesis'in window){let u=new SpeechSynthesisUtterance('حان موعد '+t.title);u.lang='ar-SA';speechSynthesis.speak(u)}}}localStorage.setItem(key,JSON.stringify(data))}
+function exportData(){let blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'}),a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='mawaeedi-backup.json';a.click();URL.revokeObjectURL(a.href)}
+function importData(e){let f=e.target.files[0];if(!f)return;let r=new FileReader();r.onload=()=>{try{let x=JSON.parse(r.result);if(!Array.isArray(x.tasks)||!Array.isArray(x.courses))throw Error();data={...defaults,...x,settings:{...defaults.settings,...x.settings}};save();$('settingsMessage').textContent='تم استيراد النسخة الاحتياطية.'}catch(err){alert('الملف غير صالح أو ليس نسخة من مواعيدي.')}};r.readAsText(f)}
+function render(){renderTasks();renderCourses();renderHistory();renderAdhkar();$('tasbeehCount').textContent=data.tasbeeh||0;renderSettings()}
+render();setInterval(checkReminders,15000);
+if('serviceWorker'in navigator){window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js').catch(()=>{}))}
+</script></body></html>
